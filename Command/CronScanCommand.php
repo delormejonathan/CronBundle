@@ -1,21 +1,15 @@
 <?php
 namespace ColourStream\Bundle\CronBundle\Command;
+
 use ColourStream\Bundle\CronBundle\Entity\CronJob;
-
+use Cron\CronExpression;
 use Doctrine\ORM\EntityManager;
-
 use Symfony\Component\Console\Command\Command;
-
 use ColourStream\Bundle\CronBundle\Annotation\CronJob as CronJobAnno;
-
 use Symfony\Bundle\DoctrineBundle\Registry;
-
 use Symfony\Component\Console\Output\OutputInterface;
-
 use Symfony\Component\Console\Input\InputInterface;
-
 use Symfony\Component\Console\Input\InputOption;
-
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 
 class CronScanCommand extends ContainerAwareCommand
@@ -46,9 +40,9 @@ class CronScanCommand extends ContainerAwareCommand
         {
             // Check for an @CronJob annotation
             $reflClass = new \ReflectionClass($command);
-            foreach($reader->getClassAnnotations($reflClass) as $anno)
+            foreach($reader->getClassAnnotations($reflClass) as $annotation)
             {
-                if($anno instanceof CronJobAnno)
+                if($annotation instanceof CronJobAnno)
                 {
                     $job = $command->getName();
                     if(array_key_exists($job, $knownJobs))
@@ -59,19 +53,18 @@ class CronScanCommand extends ContainerAwareCommand
                         // Update the job if necessary
                         $currentJob = $jobRepo->findOneByCommand($job);
                         $currentJob->setDescription($command->getDescription());
-                        if($currentJob->getInterval() != $anno->value)
+                        if($currentJob->getInterval() != $annotation->value)
                         {
-                            $newTime = new \DateTime();
-                            $newTime = $newTime->add(new \DateInterval($anno->value));
-                            
-                            $currentJob->setInterval($anno->value);
-                            $currentJob->setNextRun($newTime);
-                            $output->writeln("Updated interval for $job to {$anno->value}");
+                            $cron = CronExpression::factory($annotation->value);
+
+                            $currentJob->setInterval($annotation->value);
+                            $currentJob->setNextRun($cron->getNextRunDate());
+                            $output->writeln("Updated interval for $job to {$annotation->value}");
                         }
                     }
                     else
                     {
-                        $this->newJobFound($em, $output, $command, $anno, $defaultDisabled);
+                        $this->newJobFound($em, $output, $command, $annotation, $defaultDisabled);
                     }
                 }
             }
@@ -92,12 +85,12 @@ class CronScanCommand extends ContainerAwareCommand
         $output->writeln("Finished scanning for cron jobs");
     }
     
-    protected function newJobFound(EntityManager $em, OutputInterface $output, Command $command, CronJobAnno $anno, $defaultDisabled = false)
+    protected function newJobFound(EntityManager $em, OutputInterface $output, Command $command, CronJobAnno $annotation, $defaultDisabled = false)
     {
         $newJob = new CronJob();
         $newJob->setCommand($command->getName());
         $newJob->setDescription($command->getDescription());
-        $newJob->setInterval($anno->value);
+        $newJob->setInterval($annotation->value);
         $newJob->setNextRun(new \DateTime());
         $newJob->setEnabled(!$defaultDisabled);
         

@@ -1,19 +1,14 @@
 <?php
 namespace ColourStream\Bundle\CronBundle\Command;
+
+use Cron\CronExpression;
 use Doctrine\ORM\EntityManager;
-
 use Symfony\Component\Console\Input\ArgvInput;
-
 use ColourStream\Bundle\CronBundle\Entity\CronJobResult;
-
 use ColourStream\Bundle\CronBundle\Entity\CronJob;
-
 use Symfony\Component\Console\Output\OutputInterface;
-
 use Symfony\Component\Console\Input\InputInterface;
-
 use Symfony\Component\Console\Input\InputArgument;
-
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 
 class CronRunCommand extends ContainerAwareCommand
@@ -93,6 +88,8 @@ class CronRunCommand extends ContainerAwareCommand
         try
         {
             $returnCode = $commandToRun->execute($emptyInput, $jobOutput);
+
+            $returnCode = $returnCode ? $returnCode : true;
         }
         catch(\Exception $ex)
         {
@@ -131,9 +128,8 @@ class CronRunCommand extends ContainerAwareCommand
         $this->recordJobResult($em, $job, $jobEnd-$jobStart, $jobOutput->getOutput(), $returnCode);
         
         // And update the job with it's next scheduled time
-        $newTime = new \DateTime();
-        $newTime = $newTime->add(new \DateInterval($job->getInterval()));
-        $job->setNextRun($newTime);
+        $cron = CronExpression::factory($job->getInterval());
+        $job->setNextRun($cron->getNextRunDate());
     }
     
     protected function recordJobResult(EntityManager $em, CronJob $job, $timeTaken, $output, $resultCode)
