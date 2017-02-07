@@ -18,7 +18,8 @@
     "require": {
         "php": "^5.5.9|^7.0",
         "symfony/framework-bundle": "^2.8|^3.0",
-        "doctrine/doctrine-bundle": "*"
+        "doctrine/doctrine-bundle": "*",
+        "mtdowling/cron-expression": "v1.2.0"
     },
     "minimum-stability": "dev",
     "autoload": {
