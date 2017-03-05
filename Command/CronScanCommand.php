@@ -45,6 +45,7 @@ class CronScanCommand extends ContainerAwareCommand
                 if($annotation instanceof CronJobAnno)
                 {
                     $job = $command->getName();
+                    $interval = str_replace("\\", "", $annotation->value);
                     if(array_key_exists($job, $knownJobs))
                     {
                         // Clear it from the known jobs so that we don't try to delete it
@@ -53,18 +54,18 @@ class CronScanCommand extends ContainerAwareCommand
                         // Update the job if necessary
                         $currentJob = $jobRepo->findOneByCommand($job);
                         $currentJob->setDescription($command->getDescription());
-                        if($currentJob->getInterval() != $annotation->value)
+                        if($currentJob->getInterval() != $interval)
                         {
-                            $cron = CronExpression::factory($annotation->value);
+                            $cron = CronExpression::factory($interval);
 
-                            $currentJob->setInterval($annotation->value);
+                            $currentJob->setInterval($interval);
                             $currentJob->setNextRun($cron->getNextRunDate());
-                            $output->writeln("Updated interval for $job to {$annotation->value}");
+                            $output->writeln("Updated interval for $job to {$interval}");
                         }
                     }
                     else
                     {
-                        $this->newJobFound($em, $output, $command, $annotation, $defaultDisabled);
+                        $this->newJobFound($em, $output, $command, $interval, $defaultDisabled);
                     }
                 }
             }
@@ -85,12 +86,12 @@ class CronScanCommand extends ContainerAwareCommand
         $output->writeln("Finished scanning for cron jobs");
     }
     
-    protected function newJobFound(EntityManager $em, OutputInterface $output, Command $command, CronJobAnno $annotation, $defaultDisabled = false)
+    protected function newJobFound(EntityManager $em, OutputInterface $output, Command $command, $interval, $defaultDisabled = false)
     {
         $newJob = new CronJob();
         $newJob->setCommand($command->getName());
         $newJob->setDescription($command->getDescription());
-        $newJob->setInterval($annotation->value);
+        $newJob->setInterval($interval);
         $newJob->setNextRun(new \DateTime());
         $newJob->setEnabled(!$defaultDisabled);
         
