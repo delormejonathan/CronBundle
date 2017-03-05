@@ -28,7 +28,7 @@ class CronJob
     protected $description;
     
     /**
-     * @ORM\Column(name="job_interval", type="string", length=40)
+     * @ORM\Column(name="job_interval", type="string")
      * @var string $interval
      */
     protected $interval;
