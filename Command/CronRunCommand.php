@@ -134,6 +134,9 @@ class CronRunCommand extends ContainerAwareCommand
     
     protected function recordJobResult(EntityManager $em, CronJob $job, $timeTaken, $output, $resultCode)
     {
+        // If a $em->clear() is triggered inside a job, we re-attach Job entity to the manager
+        $job = $em->getRepository('ColourStreamCronBundle:CronJob')->find($job->getId());
+        
         // Create a new CronJobResult
         $result = new CronJobResult();
         $result->setJob($job);
