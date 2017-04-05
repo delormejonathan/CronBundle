@@ -87,9 +87,7 @@ class CronRunCommand extends ContainerAwareCommand
         $jobStart = microtime(true);
         try
         {
-            $returnCode = $commandToRun->execute($emptyInput, $jobOutput);
-
-            $returnCode = $returnCode ? $returnCode : true;
+            $returnCode = $commandToRun->run($emptyInput, $jobOutput);
         }
         catch(\Exception $ex)
         {
